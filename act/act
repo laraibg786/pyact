@@ -1,0 +1,5 @@
+#! /usr/bin/env python3
+import sys
+
+sys.stderr.write("ERROR: No Binary Contained.\n")
+sys.exit(1)
