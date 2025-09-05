@@ -1,6 +1,7 @@
 name: DRAFT nektos/act release monitor
 
 on:
+  # FIXME: enable schedule in real usage
   # schedule:
   #   - cron: '0 * 2,31 * *'
   #   - cron: '0 0 */2 * *'
@@ -18,18 +19,18 @@ jobs:
       - name: Fetch upstream and local tags
         id: fetch-tags
         run: |
-          gh api repos/nektos/act/releases -F per_page=5 \
+          curl https://api.github.com/repos/nektos/act/releases \
             | tee upstream_releases.json \
             | jq -r '.[].tag_name'
 
-          echo latest_version="curl -s https://pypi.org/pypi/requests/json \
-            | jq -r .info.version" \
-            | tee -a $GITHUB_OUTPUT
+          # echo latest_version="curl -s https://pypi.org/pypi/requests/json \
+          #   | jq -r .info.version" \
+          #   | tee -a $GITHUB_OUTPUT
+          # FIXME: uncomment above and remove below in real usage
+          echo latest_version="0.2.52" >> $GITHUB_OUTPUT
 
-      - name: Trigger sub-workflows for newer tags only (oldest to newest)
+      - name: Find the versions to release
         shell: python
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           import json
           import subprocess
@@ -37,18 +38,18 @@ jobs:
             upstream_releases = json.load(f)
           latest_version = "${{ steps.fetch-tags.outputs.latest_version }}"
           tag_found = False
-          for release in upstream_releases[::-1]:
-            if not tag_found and (tag_found := latest_version == release['tag_name'].lstrip('v')):
-              continue
-            if tag_found:
-              print(*[
-                "gh", "workflow", "run", "release-workflow.yml",
-                "--ref", "${{ github.ref }}",
-                "--field", f"release_url={release['url']}"
-              ])
+          with open('release_urls.txt', 'w') as f:
+            for release in upstream_releases[::-1]:
+              if not tag_found and (tag_found := latest_version == release['tag_name'].lstrip('v')):
+                continue
+              if tag_found:
+                f.write(release['url'] + '\n')
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ failure()}}
-        with:
-          name: release-json
-          path: upstream_releases.json
+      - name: Trigger release workflows
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: xargs -a release_urls.txt -I {} -t gh workflow \
+              run release-workflow.yml \
+              --ref "${{ github.ref }}" \
+              --field release_url="{}"
