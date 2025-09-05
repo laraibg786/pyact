@@ -46,3 +46,9 @@ jobs:
                 "--ref", "${{ github.ref }}",
                 "--field", f"release_url={release['url']}"
               ])
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure()}}
+        with:
+          name: release-json
+          path: upstream_releases.json
