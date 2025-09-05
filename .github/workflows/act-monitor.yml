@@ -1,0 +1,48 @@
+name: DRAFT nektos/act release monitor
+
+on:
+  # schedule:
+  #   - cron: '0 * 2,31 * *'
+  #   - cron: '0 0 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch upstream and local tags
+        id: fetch-tags
+        run: |
+          gh api repos/nektos/act/releases -F per_page=5 \
+            | tee upstream_releases.json \
+            | jq -r '.[].tag_name'
+
+          echo latest_version="curl -s https://pypi.org/pypi/requests/json \
+            | jq -r .info.version" \
+            | tee -a $GITHUB_OUTPUT
+
+      - name: Trigger sub-workflows for newer tags only (oldest to newest)
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          import json
+          import subprocess
+          with open('upstream_releases.json') as f:
+            upstream_releases = json.load(f)
+          latest_version = "${{ steps.fetch-tags.outputs.latest_version }}"
+          tag_found = False
+          for release in upstream_releases[::-1]:
+            if not tag_found and (tag_found := latest_version == release['tag_name'].lstrip('v')):
+              continue
+            if tag_found:
+              print(*[
+                "gh", "workflow", "run", "release-workflow.yml",
+                "--ref", "${{ github.ref }}",
+                "--field", f"release_url={release['url']}"
+              ])
