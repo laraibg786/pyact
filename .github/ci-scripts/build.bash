@@ -7,11 +7,11 @@ PLATFORM=""
 VERSION=$(cat VERSION)
 
 usage() {
-  echo "Usage: $0 -a <asset-path> -p <platform-tag> -t <version>"
+  echo "Usage: $0 -a <asset-path> -p <platform-tag>"
   exit 1
 }
 
-while getopts "a:p:t:" opt; do
+while getopts "a:p:" opt; do
   case "$opt" in
     a) ASSET="$OPTARG" ;;
     p) PLATFORM="$OPTARG" ;;
@@ -38,7 +38,7 @@ mkdir -p "$platform_dir" wheels
 
 # Unpack asset
 if [[ "$ASSET" == *.zip ]]; then
-  unzip -q "$ASSET" -d "$platform_dir"
+  unzip -qo "$ASSET" -d "$platform_dir"
 else
   tar -xzf "$ASSET" -C "$platform_dir"
 fi
@@ -52,7 +52,16 @@ else
   chmod +x "act/act"
 fi
 
+# Copy README and LICENSE if they exist
+if [[ -f "$platform_dir/README.md" ]]; then
+  cp "$platform_dir/README.md" .
+fi
+if [[ -f "$platform_dir/LICENSE" ]]; then
+  cp "$platform_dir/LICENSE" .
+fi
+
 # Clean previous dist
 rm -rf dist
 uv build --wheel
-mv "dist/*.whl" "wheels/act-${VERSION}-py3-none-any-${PLATFORM}.whl"
+uvx wheel tags --remove --platform-tag "$PLATFORM" dist/*.whl
+mv dist/*.whl wheels/
