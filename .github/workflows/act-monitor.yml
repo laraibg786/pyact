@@ -1,4 +1,4 @@
-name: DRAFT nektos/act release monitor
+name: nektos/act release monitor
 
 on:
   # FIXME: enable schedule in real usage
