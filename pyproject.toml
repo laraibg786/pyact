@@ -3,15 +3,20 @@ name = "act"
 dynamic = ["version"]
 description = "Python wrapper for nektos/act"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3"
 
 [project.scripts]
 act = "act:main"
 
 [build-system]
-requires = ["setuptools>=61", "setuptools-scm>=8"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 include-package-data = true
 packages = ["act"]
+[tool.setuptools.package-data]
+act = ["act"]
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}

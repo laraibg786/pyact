@@ -1,0 +1,118 @@
+name: Release Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_url:
+        description: 'GitHub API Release URL'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release-info.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Fetch release JSON
+        id: release-info
+        run: |
+          mkdir -p assets
+          curl -fsSL "${{ github.event.inputs.release_url }}" > release.json
+          echo "$(jq -r '.tag_name' release.json | sed 's/^v//')" | tee VERSION
+          jq -r '.assets[].browser_download_url' release.json \
+            | xargs -P0 -n1 -t curl -fsSL --output-dir assets/ -O
+
+      - name: Build Darwin arm64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Darwin_arm64.tar.gz
+               -p macosx_11_0_arm64
+
+      - name: Build Darwin x86_64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Darwin_x86_64.tar.gz
+               -p macosx_10_13_x86_64
+
+      - name: Build Linux arm64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Linux_arm64.tar.gz
+               -p manylinux_2_17_aarch64
+
+      - name: Build Linux armv7l
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Linux_armv7.tar.gz
+               -p manylinux_2_17_armv7l
+
+      - name: Build Linux i386
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Linux_i386.tar.gz
+               -p manylinux_2_17_i386
+
+      - name: Build Linux riscv64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Linux_riscv64.tar.gz
+               -p manylinux_2_17_riscv64
+
+      - name: Build Linux x86_64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Linux_x86_64.tar.gz
+               -p manylinux_2_17_x86_64
+
+      - name: Build Windows arm64
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Windows_arm64.zip
+               -p win_arm64
+
+      - name: Build Windows 32-bit
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Windows_i386.zip
+               -p win32
+
+      - name: Build Windows 64-bit
+        continue-on-error: true
+        run: .github/ci-scripts/build.bash
+               -a assets/act_Windows_x86_64.zip
+               -p win_amd64
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-wheels
+          path: wheels/*.whl
+          if-no-files-found: error
+
+  test:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - windows-latest
+          - windows-11-arm
+          - macos-13
+          - macos-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: build-wheels
+          path: dist
+
+      - name: Install + Test
+        run: |
+          pip install --find-links=dist act
+          act --version
+          act --help
