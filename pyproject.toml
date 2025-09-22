@@ -13,8 +13,5 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = []
 
-[tool.setuptools.data-files]
-"bin" = ["bin/*"]
-
 [tool.setuptools.dynamic]
 version = {file = ["VERSION"]}
