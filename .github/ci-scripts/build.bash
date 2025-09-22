@@ -48,8 +48,7 @@ act_bin="$(find "$platform_dir" -type f -name 'act*' -print -quit)"
 if [[ -z "$act_bin" ]]; then
   echo "WARNING: Could not locate act binary inside $ASSET" >&2
 else
-  cp "$act_bin" "act/act"
-  chmod +x "act/act"
+  cp "$act_bin" "bin/"
 fi
 
 # Copy README and LICENSE if they exist
@@ -65,3 +64,4 @@ rm -rf dist
 uv build --wheel
 uvx wheel tags --remove --platform-tag "$PLATFORM" dist/*.whl
 mv dist/*.whl wheels/
+rm -f bin/*

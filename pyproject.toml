@@ -6,17 +6,15 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3"
 
-[project.scripts]
-act = "act:main"
-
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-include-package-data = true
-packages = ["act"]
-[tool.setuptools.package-data]
-act = ["act"]
+packages = []
+
+[tool.setuptools.data-files]
+"bin" = ["bin/*"]
+
 [tool.setuptools.dynamic]
 version = {file = ["VERSION"]}
