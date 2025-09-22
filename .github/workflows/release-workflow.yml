@@ -112,7 +112,15 @@ jobs:
           path: dist
 
       - name: Install + Test
+        if: runner.os != 'Windows'
         run: |
           pip install --find-links=dist act
           act --version
           act --help
+
+      - name: Install + Test
+        if: runner.os == 'Windows'
+        run: |
+          pip install --find-links=dist act
+          act.exe --version
+          act.exe --help
