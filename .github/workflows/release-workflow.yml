@@ -70,18 +70,24 @@ jobs:
 
       - name: Build Windows arm64
         continue-on-error: true
+        env:
+          SYS_PLATFORM: win32
         run: .github/ci-scripts/build.bash
                -a assets/act_Windows_arm64.zip
                -p win_arm64
 
       - name: Build Windows 32-bit
         continue-on-error: true
+        env:
+          SYS_PLATFORM: win32
         run: .github/ci-scripts/build.bash
                -a assets/act_Windows_i386.zip
                -p win32
 
       - name: Build Windows 64-bit
         continue-on-error: true
+        env:
+          SYS_PLATFORM: win32
         run: .github/ci-scripts/build.bash
                -a assets/act_Windows_x86_64.zip
                -p win_amd64
